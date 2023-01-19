@@ -3,47 +3,7 @@ from datacenter.models import (
 from sys import exit
 import random
 
-
-def get_schoolkid_info(child_full_name):
-    try:
-        child_info = Schoolkid.objects.get(full_name__contains=child_full_name)
-    except Schoolkid.MultipleObjectsReturned:
-        exit('ОШИБКА: Найдено несколько учеников')
-    except Schoolkid.DoesNotExist:
-        exit('ОШИБКА: имя не найдено.')
-    return child_info
-
-
-def get_lesson(lesson,kid):
-    lessons_info = Lesson.objects.filter(
-        group_letter=kid.group_letter,
-        year_of_study=kid.year_of_study,
-        subject__title=lesson).order_by('-date').first()
-    if lessons_info is None:
-        exit("ОШИБКА: Неверно введено название предмета")
-    return lessons_info
-
-
-def change_bad_marks(schoolkid):
-    kid = get_schoolkid_info(schoolkid)
-    all_bad_marks = Mark.objects.filter(
-        schoolkid=kid, points__in=[1, 2, 3])
-    for bad_mark in all_bad_marks:
-        bad_mark.points = 5
-        bad_mark.save()
-
-
-def remove_chastisements(schoolkid):
-    all_bad_marks = Chastisement.objects.filter(schoolkid=get_schoolkid_info(schoolkid))
-    for bad_mark in all_bad_marks:
-        bad_mark.delete()
-
-
-def create_commendation(schoolkid,subject):
-
-    kid = get_schoolkid_info(schoolkid)
-    lesson = get_lesson(subject,kid)
-    praise_list = ["Молодец!",
+PRAISE = ["Молодец!",
                    "Отлично!",
                    "Хорошо!",
                    "Гораздо лучше, чем я ожидал!",
@@ -74,9 +34,49 @@ def create_commendation(schoolkid,subject):
                    "Ты многое сделал, я это вижу!",
                    "Теперь у тебя точно все получится!"
                    ]
+
+def get_schoolkid_info(child_full_name):
+    try:
+        child_info = Schoolkid.objects.get(full_name__contains=child_full_name)
+    except Schoolkid.MultipleObjectsReturned:
+        exit('ОШИБКА: Найдено несколько учеников')
+    except Schoolkid.DoesNotExist:
+        exit('ОШИБКА: имя не найдено.')
+    return child_info
+
+
+def get_lesson(lesson,kid):
+    lessons_info = Lesson.objects.filter(
+        group_letter=kid.group_letter,
+        year_of_study=kid.year_of_study,
+        subject__title=lesson).order_by('-date').first()
+    if lessons_info is None:
+        exit("ОШИБКА: Неверно введено название предмета")
+    return lessons_info
+
+
+def change_bad_marks(schoolkid):
+    kid = get_schoolkid_info(schoolkid)
+    all_bad_marks = Mark.objects.filter(
+        schoolkid=kid, points__in=[1, 2, 3])
+    all_bad_marks.update(points = 5)
+
+
+
+def remove_chastisements(schoolkid):
+    all_bad_marks = Chastisement.objects.filter(schoolkid=get_schoolkid_info(schoolkid))
+    all_bad_marks.delete()
+
+
+
+def create_commendation(schoolkid,subject):
+
+    kid = get_schoolkid_info(schoolkid)
+    lesson = get_lesson(subject,kid)
+
     Commendation.objects.create(
         teacher=lesson.teacher,
         subject=lesson.subject,
         created=lesson.date,
         schoolkid=kid,
-        text=random.choice(praise_list))
+        text=random.choice(PRAISE))
